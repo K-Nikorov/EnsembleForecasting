@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %} Ensemble Forecasting {% endblock %}
+
+{% block main_theme %} Что мы такое? {% endblock %}
+
+{% block body %}
+    <p>Данный веб-сервис предназначен для настройки и обучения таких алгоритмов машинного обучения, как Random Forest и Gradient Boosting.
+        Также обученные алгоритмы могут быть использованы для получения прогнозов для неизвестных данных.</p>
+
+    <p>Обучение может проводиться только на датасете, состоящем из вещественных признаков.</p>
+
+    <form method="get" class="needs-validation" novalidate="" action="{{ url_for('upload_file', ident=ident) }}">
+          <button class="btn btn-success" type="submit">Приступить к прогнозированию</button>
+    </form>
+{% endblock %}
