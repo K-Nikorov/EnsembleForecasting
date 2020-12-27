@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %} Процесс обучения {% endblock %}
+
+{% block main_theme %} Процесс обучения {% endblock %}
+
+{% block body %}
+    <img src="{{ url_for('figure', ident=ident, noise=noise) }}" alt="Decreasing of train error" width="768", height="400">
+
+    <div class="row g-3">
+        <div class="col-md-2.5">
+            <form method="get" class="needs-validation" novalidate="" action="{{ url_for('predict', ident=ident) }}">
+                  <button class="btn btn-success" type="submit">Построить прогноз</button>
+            </form>
+        </div>
+        <div class="col-md-3">
+            <form method="get" class="needs-validation" novalidate="" action="{{ url_for('model_settings', ident=ident) }}">
+                  <button class="btn btn-warning" type="submit">Ввести новые параметры</button>
+            </form>
+        </div>
+        <div class="col-md-3">
+            <form method="get" class="needs-validation" novalidate="" action="{{ url_for('clean_data', ident=ident) }}">
+                  <button class="btn btn-warning" type="submit">Загрузить новые данные</button>
+            </form>
+        </div>
+    </div>
+    <p><h2>Подробная информация</h2></p>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+          <thead>
+            <tr>
+              <th># Итерации</th>
+              <th>Значение RMSE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(log_len) %}
+                <tr>
+                  <td>{{ iters[i] }}</td>
+                  <td>{{ log_train[i] }}</td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+{% endblock %}
