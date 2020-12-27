@@ -49,13 +49,16 @@ def get_train_res(ident):
         cur_us.model = ensembles.RandomForestMSE(**cur_us.model_params)
     else:
         cur_us.model = ensembles.GradientBoostingMSE(**cur_us.model_params)
-    X = pd.read_csv(cur_us.train_data)
-    y = pd.read_csv(cur_us.target_data)
-    X = X.sample(frac=1)
-    y = y.iloc[X.index]
-    X_arr = X.values
-    y_arr = y.values.reshape(-1)
-    iters, log_train = cur_us.model.fit(X_arr, y_arr, return_log=True)
+    try:
+        X = pd.read_csv(cur_us.train_data)
+        y = pd.read_csv(cur_us.target_data)
+        X = X.sample(frac=1)
+        y = y.iloc[X.index]
+        X_arr = X.values
+        y_arr = y.values.reshape(-1)
+        iters, log_train = cur_us.model.fit(X_arr, y_arr, return_log=True)
+    except:
+        return -1, -1, -1
     fig, ax = plt.subplots(figsize=(7, 5))
     ax.set_ylim(0, 500)
     ax.plot(iters, log_train, label='train RMSE')
@@ -67,10 +70,14 @@ def get_train_res(ident):
     return fig, iters[0: len(iters): len(iters)//15 + 1], log_train[0: len(iters): len(iters)//15 + 1]
 
 
-def get_prediction(X_test, ident):
+def get_prediction(ident):
     model = users[ident].model
     filename = os.path.join(app.config['UPLOAD_FOLDER'], 'prediction_' + str(ident) + '.csv')
-    pred = model.predict(X_test.values)
+    try:
+        X_test = pd.read_csv(users[ident].test_data)
+        pred = model.predict(X_test.values)
+    except:
+        return -1
     pred = pd.Series(data=pred, name='Prediction', index=X_test.index)
     pred.to_csv(filename)
     return 'prediction_' + str(ident) + '.csv'
@@ -89,8 +96,8 @@ def index():
     return render_template('index.html', ident=glob_ident-1)
 
 
-@app.route('/upload_file/<int:ident>', methods=['GET', 'POST'])
-def upload_file(ident):
+@app.route('/upload_file/<int:ident>/<int:ok_data>', methods=['GET', 'POST'])
+def upload_file(ident, ok_data=1):
     cur_us = users[ident]
     cur_us.model_params = dict()
     cur_us.model_name = None
@@ -111,7 +118,7 @@ def upload_file(ident):
             y_train.save(cur_us.target_data)
             users[cur_us.ident] = cur_us
             return redirect(url_for('model_settings', ident=cur_us.ident))
-    return render_template('upload_file.html')
+    return render_template('upload_file.html', ok_data=ok_data)
 
 
 @app.route('/model_settings/<int:ident>', methods=['GET', 'POST'])
@@ -171,8 +178,6 @@ def model_settings(ident):
 @app.route('/model_info/<int:ident>/<int:correct_params>', methods=['GET', 'POST'])
 def model_info(ident, correct_params):
     cur_us = users[ident]
-    if request.method == 'POST':
-        pass
     return render_template('model_info.html', ident=ident, model_name=cur_us.model_name, model_params=cur_us.model_params,
                            correct_params=correct_params, russion_params=russion_params)
 
@@ -181,6 +186,15 @@ def model_info(ident, correct_params):
 def train_res(ident):
     fig, iters, log_train = get_train_res(ident)
     cur_us = users[ident]
+
+    if isinstance(fig, int):
+        if isinstance(cur_us.train_data, str):
+            os.remove(cur_us.train_data)
+
+        if isinstance(cur_us.target_data, str):
+            os.remove(cur_us.target_data)
+        return redirect(url_for('upload_file', ident=ident, ok_data=0))
+
     cur_us.train_res = 'train_res_'+str(cur_us.ident)+'.png'
     fig.savefig(os.path.join(app.config['UPLOAD_FOLDER'], cur_us.train_res))
     users[ident] = cur_us
@@ -202,11 +216,17 @@ def predict(ident):
         if X_test and allowed_file(X_test.filename):
             cur_us.test_data = os.path.join(app.config['UPLOAD_FOLDER'], 'test_data_' + str(cur_us.ident) + '.csv')
             X_test.save(cur_us.test_data)
-            cur_us.predicted_data = get_prediction(pd.read_csv(cur_us.test_data), ident)
+            users[ident] = cur_us
+            cur_us.predicted_data = get_prediction(ident)
+            if isinstance(cur_us.predicted_data, int):
+                os.remove(cur_us.test_data)
+                cur_us.test_data = None
+                cur_us.predicted_data = None
+                return render_template('predict.html', ident=ident, correct_test=0)
             users[ident] = cur_us
             return redirect(url_for('uploaded_file',
                                     ident=ident))
-    return render_template('predict.html', ident=ident)
+    return render_template('predict.html', ident=ident, correct_test=1)
 
 
 @app.route('/uploads/<int:ident>')
@@ -235,4 +255,4 @@ def clean_data(ident):
     if isinstance(cur_us.predicted_data, str):
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], cur_us.predicted_data))
 
-    return redirect(url_for('upload_file', ident=ident))
+    return redirect(url_for('upload_file', ident=ident, ok_data=1))
