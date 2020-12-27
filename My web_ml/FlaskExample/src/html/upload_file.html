@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %} Загрузка данных {% endblock %}
+
+{% block main_theme %} Загрузка обучающих данных и целевой переменной {% endblock %}
+
+{% block body %}
+    <form action="" method=post enctype=multipart/form-data>
+        <h5>Выберите алгоритм</h5>
+        <p><select size="2" name=model>
+            <option selected value="Gradient Boosting">Gradient Boosting Regressor</option>
+            <option value="Random Forest">Random Forest Regressor</option>
+        </select></p>
+
+        <h5>Укажите обучающие данные</h5>
+        <p><input type=file name=train>
+
+        <h5>Укажите целевую переменную</h5>
+        <p><input type=file name=target>
+        <p><input class="btn btn-success" type=submit value="Загрузить все данные">
+    </form>
+{% endblock %}

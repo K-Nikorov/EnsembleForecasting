@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %} Просмотр модели {% endblock %}
+
+{% block main_theme %} Параметры модели {% endblock %}
+
+{% block body %}
+    <div class="row mb-3">
+          <div class="col-md-8 themed-grid-col">Название алгоритма</div>
+          <div class="col-md-4 themed-grid-col">{{ model_name + " Regressor" }}</div>
+    </div>
+    {% for arg in model_params %}
+        <div class="row mb-3">
+              <div class="col-md-8 themed-grid-col">{{ russion_params[arg] }}</div>
+              <div class="col-md-4 themed-grid-col">{{ model_params[arg] }}</div>
+        </div>
+    {% endfor %}
+    {% if correct_params == 1 %}
+        <div class="row g-3">
+            <div class="col-md-2.5">
+                <form method="post" class="needs-validation" novalidate="" action="{{ url_for('train_res', ident=ident) }}">
+                      <button class="btn btn-success" type="submit">Начать обучение</button>
+                </form>
+            </div>
+            <div class="col-md-3">
+                <form method="get" class="needs-validation" novalidate="" action="{{ url_for('model_settings', ident=ident) }}">
+                      <button class="btn btn-warning" type="submit">Ввести новые параметры</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <form method="get" class="needs-validation" novalidate="" action="{{ url_for('model_settings', ident=ident) }}">
+              <button class="btn btn-danger" type="submit">Ввести новые параметры</button>
+        </form>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if model_name == "Random Forest" %}
+        Настройка Random Forest Regressor
+    {% else %}
+        Настройка Gradient Boosting Regressor
+    {% endif %}
+{% endblock %}
+
+{% block main_theme %}
+    {% if model_name == "Random Forest" %}
+        Выберите параметры Random Forest Regressor
+    {% else %}
+        Выберите параметры Gradient Boosting Regressor
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    <form method="post" class="needs-validation" novalidate="">
+        <div class="row g-3">
+            <div class="col-sm-6">
+              <label for="n_estimators" class="form-label">Количество деревьев</label>
+              <input type="text" class="form-control" id="n_estimators" name="n_estimators" placeholder="100" value="" required="">
+            </div>
+
+            <div class="col-sm-6">
+              <label for="max_depth" class="form-label">Максимальная глубина одного дерева</label>
+              <input type="text" class="form-control" id="max_depth" name="max_depth" placeholder="5" value="" required="">
+            </div>
+
+            <div class="col-sm-6">
+              <label for="feature_subsample_size" class="form-label">Размерность подвыборки признаков</label>
+              <input type="text" class="form-control" id="feature_subsample_size" name="feature_subsample_size" placeholder="1.0" value="" required="">
+            </div>
+            {% if model_name == "Gradient Boosting" %}
+                <div class="col-sm-6">
+                  <label for="learning_rate" class="form-label">Темп обучения</label>
+                  <input type="text" class="form-control" id="learning_rate" name="learning_rate" placeholder="0.1" value="" required="">
+                </div>
+            {% endif %}
+        </div>
+        <button class="btn btn-success" type="submit">Закончить ввод параметров</button>
+    </form>
+{% endblock %}
