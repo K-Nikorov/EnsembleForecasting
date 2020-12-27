@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %} Построение прогноза {% endblock %}
+
+{% block main_theme %} Загрузка данных для прогноза {% endblock %}
+
+{% block body %}
+    <form method="post" enctype=multipart/form-data>
+        <h5>Укажите данные</h5>
+        <p><input type=file name=test>
+        <p><input type=submit value="Получить прогноз">
+    </form>
+
+    <form method="get" class="needs-validation" novalidate="" action="{{ url_for('clean_data', ident=ident) }}">
+          <button class="btn btn-success" type="submit">Загрузить новые данные</button>
+    </form>
+{% endblock %}

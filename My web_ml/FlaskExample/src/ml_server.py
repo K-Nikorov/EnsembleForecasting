@@ -8,6 +8,7 @@ from flask import Flask, request, url_for
 from flask import render_template, redirect
 from flask import send_from_directory
 
+
 UPLOAD_FOLDER = './user_data'
 ALLOWED_EXTENSIONS = set(['csv'])
 
@@ -42,11 +43,6 @@ glob_ident = 0
 users = dict()
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
-
 def get_train_res(ident):
     cur_us = users[ident]
     if cur_us.model_name == 'Random Forest':
@@ -71,6 +67,20 @@ def get_train_res(ident):
     return fig, iters[0: len(iters): len(iters)//15 + 1], log_train[0: len(iters): len(iters)//15 + 1]
 
 
+def get_prediction(X_test, ident):
+    model = users[ident].model
+    filename = os.path.join(app.config['UPLOAD_FOLDER'], 'prediction_' + str(ident) + '.csv')
+    pred = model.predict(X_test.values)
+    pred = pd.Series(data=pred, name='Prediction', index=X_test.index)
+    pred.to_csv(filename)
+    return 'prediction_' + str(ident) + '.csv'
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global glob_ident
@@ -84,9 +94,12 @@ def upload_file(ident):
     cur_us = users[ident]
     cur_us.model_params = dict()
     cur_us.model_name = None
-    cur_us.model_params = dict()
     cur_us.model = None
     cur_us.train_res = None
+    cur_us.train_data = None
+    cur_us.target_data = None
+    cur_us.test_data = None
+    cur_us.predicted_data = None
 
     if request.method == 'POST':
         X_train, y_train = request.files['train'], request.files['target']
@@ -183,7 +196,25 @@ def figure(ident, noise):
 
 @app.route('/predict/<int:ident>', methods=['GET', 'POST'])
 def predict(ident):
-    return ''
+    cur_us = users[ident]
+    if request.method == 'POST':
+        X_test = request.files['test']
+        if X_test and allowed_file(X_test.filename):
+            cur_us.test_data = os.path.join(app.config['UPLOAD_FOLDER'], 'test_data_' + str(cur_us.ident) + '.csv')
+            X_test.save(cur_us.test_data)
+            cur_us.predicted_data = get_prediction(pd.read_csv(cur_us.test_data), ident)
+            users[ident] = cur_us
+            return redirect(url_for('uploaded_file',
+                                    ident=ident))
+    return render_template('predict.html', ident=ident)
+
+
+@app.route('/uploads/<int:ident>')
+def uploaded_file(ident):
+    cur_us = users[ident]
+    return send_from_directory(app.config['UPLOAD_FOLDER'],
+                               cur_us.predicted_data, as_attachment=True, cache_timeout=0,
+                               attachment_filename='prediction.csv')
 
 
 @app.route('/clean_data/<int:ident>')
@@ -195,7 +226,13 @@ def clean_data(ident):
     if isinstance(cur_us.target_data, str):
         os.remove(cur_us.target_data)
 
+    if isinstance(cur_us.test_data, str):
+        os.remove(cur_us.test_data)
+
     if isinstance(cur_us.train_res, str):
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], cur_us.train_res))
+
+    if isinstance(cur_us.predicted_data, str):
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], cur_us.predicted_data))
 
     return redirect(url_for('upload_file', ident=ident))
