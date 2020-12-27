@@ -1,0 +1,8 @@
+numpy
+ensembles
+pandas
+matplotlib
+scipy
+scikit-learn
+
+flask

@@ -1,0 +1,6 @@
+In thise repo:
+
+	1. docker build -t ensemble_forecasting .
+	2. docker run --rm -p 5000:5000 -i ensemble_forecasting
+
+After this web-service is available at http://localhost:5000

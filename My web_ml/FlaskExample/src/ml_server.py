@@ -27,6 +27,7 @@ russion_params = {'n_estimators': 'Количество деревьев',
 
 
 class UserData:
+    # структура данных, хранящая информацию об одном пользователе
     def __init__(self, ident):
         self.ident = ident
         self.model_name = None
@@ -39,11 +40,16 @@ class UserData:
         self.train_res = None
 
 
-glob_ident = 0
-users = dict()
+glob_ident = 0  # счетчик пользователей сервиса
+users = dict()  # словарь всех пользователей сервиса
 
 
 def get_train_res(ident):
+    """
+    :param ident - идентификатор пользователя:
+    :returns график убывания функции потерь и соответствующие ему значения функции потерь:
+    """
+
     cur_us = users[ident]
     if cur_us.model_name == 'Random Forest':
         cur_us.model = ensembles.RandomForestMSE(**cur_us.model_params)
@@ -53,7 +59,7 @@ def get_train_res(ident):
         X = pd.read_csv(cur_us.train_data)
         y = pd.read_csv(cur_us.target_data)
         X = X.sample(frac=1)
-        y = y.iloc[X.index]
+        y = y.iloc[X.index, -1]
         X_arr = X.values
         y_arr = y.values.reshape(-1)
         iters, log_train = cur_us.model.fit(X_arr, y_arr, return_log=True)
@@ -71,6 +77,10 @@ def get_train_res(ident):
 
 
 def get_prediction(ident):
+    """
+    :param ident - идентификатор пользователя:
+    :return имя файла, содержащего прогноз:
+    """
     model = users[ident].model
     filename = os.path.join(app.config['UPLOAD_FOLDER'], 'prediction_' + str(ident) + '.csv')
     try:
@@ -118,7 +128,7 @@ def upload_file(ident, ok_data=1):
             y_train.save(cur_us.target_data)
             users[cur_us.ident] = cur_us
             return redirect(url_for('model_settings', ident=cur_us.ident))
-    return render_template('upload_file.html', ok_data=ok_data)
+    return render_template('upload_file.html', ident=ident, ok_data=ok_data)
 
 
 @app.route('/model_settings/<int:ident>', methods=['GET', 'POST'])
@@ -156,8 +166,9 @@ def model_settings(ident):
                 if not(0 < cur_us.model_params['feature_subsample_size'] <= 1):
                     raise ValueError
             except:
-                cur_us.model_params['feature_subsample_size'] = (request.form['feature_subsample_size']
-                                                                 + ' -- ERROR: должно быть вещественным в диапазоне (0, 1]')
+                cur_us.model_params['feature_subsample_size'] = (request.form['feature_subsample_size'] +
+                                                                 ' -- ERROR: должно быть вещественным в диапазоне (0,1]'
+                                                                 )
                 flag_ok = 0
 
         if cur_us.model_name == 'Gradient Boosting':
@@ -167,18 +178,19 @@ def model_settings(ident):
                 try:
                     cur_us.model_params['learning_rate'] = float(request.form['learning_rate'])
                 except:
-                    cur_us.model_params['learning_rate'] = (request.form['learning_rate']
-                                                        + ' -- ERROR: должно быть положительным вещественным ')
+                    cur_us.model_params['learning_rate'] = (request.form['learning_rate'] +
+                                                            ' -- ERROR: должно быть положительным вещественным ')
                     flag_ok = 0
         users[ident] = cur_us
         return redirect(url_for('model_info', ident=cur_us.ident, correct_params=flag_ok))
-    return render_template('model_settings.html', model_name=cur_us.model_name)
+    return render_template('model_settings.html', ident=ident, model_name=cur_us.model_name)
 
 
 @app.route('/model_info/<int:ident>/<int:correct_params>', methods=['GET', 'POST'])
 def model_info(ident, correct_params):
     cur_us = users[ident]
-    return render_template('model_info.html', ident=ident, model_name=cur_us.model_name, model_params=cur_us.model_params,
+    return render_template('model_info.html', ident=ident,
+                           model_name=cur_us.model_name, model_params=cur_us.model_params,
                            correct_params=correct_params, russion_params=russion_params)
 
 
@@ -199,7 +211,9 @@ def train_res(ident):
     fig.savefig(os.path.join(app.config['UPLOAD_FOLDER'], cur_us.train_res))
     users[ident] = cur_us
     noise = "".join((np.random.randn(3) + 4).astype(str))
-    return render_template('train_res.html', ident=ident, noise=noise, iters=iters, log_train=log_train, log_len=len(log_train))
+    return render_template('train_res.html', ident=ident,
+                           noise=noise, iters=iters,
+                           log_train=log_train, log_len=len(log_train))
 
 
 @app.route('/train_res/<int:ident>/figure/<string:noise>')
